@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>உணவக மெனு</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🍽️ உணவக மெனு</h1>
+        </header>
+
+        <main>
+            <div class="tabs-container">
+                <button class="tab-btn active" data-tab="menu">மெனு</button>
+                <button class="tab-btn" data-tab="manage">மெனு மேலாண்மை</button>
+            </div>
+
+            <div class="main-content-wrapper">
+                <section class="menu-section">
+                    <div class="tab-content active" id="menuTab">
+                        <div class="section-header">
+                            <h2>மெனு பொருட்கள்</h2>
+                        </div>
+                        <div class="menu-grid" id="menuGrid">
+                            </div>
+                    </div>
+
+                    <div class="tab-content" id="manageTab">
+                        <div class="section-header">
+                            <h2>மெனு மேலாண்மை</h2>
+                            <button class="btn btn-primary" id="addItemBtn">+ புதிய பொருள் சேர்</button>
+                        </div>
+
+                        <div class="add-item-form" id="addItemForm" style="display: none;">
+                            <h3>புதிய மெனு பொருள் சேர்</h3>
+                            <form id="newItemForm">
+                                <div class="form-group">
+                                    <label for="itemName">பொருள் பெயர்:</label>
+                                    <input type="text" id="itemName" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="itemPrice">விலை (₹):</label>
+                                    <input type="number" id="itemPrice" min="0" step="0.01" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="itemImage">பட URL:</label>
+                                    <input type="text" id="itemImage" placeholder="பட URL ஐ உள்ளிடவும்">
+                                </div>
+                                <div class="form-actions">
+                                    <button type="submit" class="btn btn-success">சேர்</button>
+                                    <button type="button" class="btn btn-secondary" id="cancelAddBtn">ரத்து</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div class="modal" id="editModal">
+                            <div class="modal-content">
+                                <span class="close-modal">&times;</span>
+                                <h3>மெனு பொருளை திருத்த</h3>
+                                <form id="editItemForm">
+                                    <input type="hidden" id="editItemId">
+                                    <div class="form-group">
+                                        <label for="editItemName">பொருள் பெயர்:</label>
+                                        <input type="text" id="editItemName" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="editItemPrice">விலை (₹):</label>
+                                        <input type="number" id="editItemPrice" min="0" step="0.01" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="editItemImage">பட URL:</label>
+                                        <input type="text" id="editItemImage" placeholder="பட URL ஐ உள்ளிடவும்">
+                                    </div>
+                                    <div class="form-actions">
+                                        <button type="submit" class="btn btn-success">மாற்றங்களை சேமி</button>
+                                        <button type="button" class="btn btn-secondary" id="cancelEditBtn">ரத்து</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="menu-grid" id="manageGrid">
+                            </div>
+                    </div>
+                </section>
+
+                <section class="bill-section-right" id="billSectionRight">
+                    <div class="bill-header">
+                        <h2>பில்</h2>
+                        <button class="btn btn-danger" id="clearCartBtn">அழி</button>
+                    </div>
+
+                    <div class="bill-details" id="billDetails">
+                        <p class="empty-bill">வாங்கிய பொருட்கள் இல்லை</p>
+                    </div>
+
+                    <div class="bill-footer">
+                        <div class="bill-total">
+                            <strong>மொத்த தொகை: ₹<span id="grandTotal">0</span></strong>
+                        </div>
+
+                        <div class="money-received-section">
+                            <label for="moneyReceived">பெறப்பட்ட தொகை (₹):</label>
+                            <input type="number" id="moneyReceived" min="0" step="0.01" placeholder="0" oninput="calculateChange()">
+                        </div>
+
+                        <div class="change-amount" id="changeAmount" style="display: none;">
+                            <strong>மீதி தொகை: ₹<span id="changeValue">0</span></strong>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
