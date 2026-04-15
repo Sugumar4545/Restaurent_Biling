@@ -123,7 +123,7 @@ function WaiterInterface() {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-4 p-4 h-[calc(100vh-4rem)]">
+    <div className="flex flex-col lg:flex-row gap-4 p-4 h-[calc(100vh-3.5rem)]">
       {/* Notification */}
       {notification && (
         <div

@@ -67,6 +67,18 @@ function BillingPanel() {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
 
+    // Use dynamic values for unpaid orders, DB values for paid orders
+    const subtotal = parseFloat(order.total_amount);
+    const pdfTax = order.status === 'Paid'
+      ? parseFloat(order.tax_amount || 0)
+      : (subtotal * taxPercent) / 100;
+    const pdfDiscount = order.status === 'Paid'
+      ? parseFloat(order.discount_amount || 0)
+      : discountAmount;
+    const pdfTotal = order.status === 'Paid'
+      ? parseFloat(order.final_amount)
+      : subtotal + pdfTax - pdfDiscount;
+
     // Header
     doc.setFontSize(20);
     doc.text('Restaurant POS', pageWidth / 2, 20, { align: 'center' });
@@ -101,13 +113,13 @@ function BillingPanel() {
 
     const finalY = doc.lastAutoTable.finalY + 10;
 
-    // Totals
-    doc.text(`Subtotal: ₹${parseFloat(order.total_amount).toFixed(2)}`, 14, finalY);
-    doc.text(`Tax: ₹${parseFloat(order.tax_amount || 0).toFixed(2)}`, 14, finalY + 7);
-    doc.text(`Discount: ₹${parseFloat(order.discount_amount || 0).toFixed(2)}`, 14, finalY + 14);
+    // Totals - use computed values that match the on-screen display
+    doc.text(`Subtotal: ₹${subtotal.toFixed(2)}`, 14, finalY);
+    doc.text(`Tax: ₹${pdfTax.toFixed(2)}`, 14, finalY + 7);
+    doc.text(`Discount: ₹${pdfDiscount.toFixed(2)}`, 14, finalY + 14);
     doc.setFontSize(14);
     doc.setFont(undefined, 'bold');
-    doc.text(`Total: ₹${parseFloat(order.final_amount).toFixed(2)}`, 14, finalY + 24);
+    doc.text(`Total: ₹${pdfTotal.toFixed(2)}`, 14, finalY + 24);
 
     // Footer
     doc.setFontSize(9);
@@ -130,7 +142,7 @@ function BillingPanel() {
   };
 
   return (
-    <div className="p-4 h-[calc(100vh-4rem)] flex flex-col lg:flex-row gap-4">
+    <div className="p-4 h-[calc(100vh-3.5rem)] flex flex-col lg:flex-row gap-4">
       {notification && (
         <div
           className={`fixed top-20 right-4 z-50 px-6 py-3 rounded-lg shadow-lg animate-slide-in ${

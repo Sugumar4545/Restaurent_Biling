@@ -126,7 +126,7 @@ function KitchenDisplay() {
   const readyCount = orders.filter((o) => o.status === 'Ready').length;
 
   return (
-    <div className="p-4 h-[calc(100vh-4rem)] flex flex-col">
+    <div className="p-4 h-[calc(100vh-3.5rem)] flex flex-col">
       {/* Header with filters */}
       <div className="flex flex-wrap items-center justify-between mb-4 gap-3">
         <h2 className="text-2xl font-bold text-gray-800">Kitchen Display System</h2>

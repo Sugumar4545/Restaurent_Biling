@@ -25,10 +25,13 @@ const createOrder = async (req, res) => {
     );
     const menuMap = new Map(menuResult.rows.map(row => [row.id, row]));
 
-    // Validate all items exist
+    // Validate all items exist and have valid quantities
     for (const item of items) {
       if (!menuMap.has(item.menu_item_id)) {
         throw new Error(`Menu item not found: ${item.menu_item_id}`);
+      }
+      if (!Number.isInteger(item.quantity) || item.quantity <= 0) {
+        throw new Error(`Invalid quantity for item: ${item.menu_item_id}`);
       }
     }
 
