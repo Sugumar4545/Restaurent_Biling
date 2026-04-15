@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ordersApi } from '../../utils/api';
 import socket from '../../utils/socket';
+import { useLanguage } from '../../utils/LanguageContext';
 
 function KitchenDisplay() {
   const [orders, setOrders] = useState([]);
   const [filter, setFilter] = useState('all'); // all, Pending, Preparing, Ready
+  const { t } = useLanguage();
 
   const loadOrders = useCallback(async () => {
     try {
@@ -129,7 +131,7 @@ function KitchenDisplay() {
     <div className="p-4 h-[calc(100vh-3.5rem)] flex flex-col">
       {/* Header with filters */}
       <div className="flex flex-wrap items-center justify-between mb-4 gap-3">
-        <h2 className="text-2xl font-bold text-gray-800">Kitchen Display System</h2>
+        <h2 className="text-2xl font-bold text-gray-800">{t('kitchenDisplaySystem')}</h2>
         <div className="flex gap-2">
           <button
             onClick={() => setFilter('all')}
@@ -137,7 +139,7 @@ function KitchenDisplay() {
               filter === 'all' ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600'
             }`}
           >
-            All ({orders.length})
+            {t('all')} ({orders.length})
           </button>
           <button
             onClick={() => setFilter('Pending')}
@@ -145,7 +147,7 @@ function KitchenDisplay() {
               filter === 'Pending' ? 'bg-red-500 text-white' : 'bg-red-50 text-red-600'
             }`}
           >
-            Pending ({pendingCount})
+            {t('pending')} ({pendingCount})
           </button>
           <button
             onClick={() => setFilter('Preparing')}
@@ -153,7 +155,7 @@ function KitchenDisplay() {
               filter === 'Preparing' ? 'bg-yellow-500 text-white' : 'bg-yellow-50 text-yellow-600'
             }`}
           >
-            Preparing ({preparingCount})
+            {t('preparing')} ({preparingCount})
           </button>
           <button
             onClick={() => setFilter('Ready')}
@@ -161,7 +163,7 @@ function KitchenDisplay() {
               filter === 'Ready' ? 'bg-green-500 text-white' : 'bg-green-50 text-green-600'
             }`}
           >
-            Ready ({readyCount})
+            {t('ready')} ({readyCount})
           </button>
         </div>
       </div>
@@ -181,7 +183,7 @@ function KitchenDisplay() {
                 <div>
                   <h3 className="font-bold text-sm text-gray-800">{order.order_id}</h3>
                   <p className="text-xs text-gray-500">
-                    {order.table_number ? `Table #${order.table_number}` : 'Parcel'}
+                    {order.table_number ? `${t('table')} #${order.table_number}` : t('parcel')}
                   </p>
                 </div>
                 <div className="flex flex-col items-end gap-1">
@@ -213,7 +215,7 @@ function KitchenDisplay() {
 
               {order.special_instructions && (
                 <div className="text-xs text-orange-600 italic border-t border-gray-200 pt-2 mb-3">
-                  Note: {order.special_instructions}
+                  {t('note')}: {order.special_instructions}
                 </div>
               )}
 
@@ -224,7 +226,7 @@ function KitchenDisplay() {
                     onClick={() => updateStatus(order.order_id, 'Preparing')}
                     className="flex-1 btn btn-warning text-sm py-2"
                   >
-                    Start Preparing
+                    {t('startPreparing')}
                   </button>
                 )}
                 {order.status === 'Preparing' && (
@@ -232,12 +234,12 @@ function KitchenDisplay() {
                     onClick={() => updateStatus(order.order_id, 'Ready')}
                     className="flex-1 btn btn-success text-sm py-2"
                   >
-                    Mark Ready
+                    {t('markReady')}
                   </button>
                 )}
                 {order.status === 'Ready' && (
                   <div className="flex-1 text-center py-2 text-green-600 font-bold text-sm">
-                    Waiting for pickup
+                    {t('waitingForPickup')}
                   </div>
                 )}
               </div>
@@ -247,9 +249,9 @@ function KitchenDisplay() {
 
         {sortedOrders.length === 0 && (
           <div className="text-center text-gray-400 py-20">
-            <p className="text-6xl mb-4">👨‍🍳</p>
-            <p className="text-xl">No active orders</p>
-            <p className="text-sm mt-2">Orders will appear here in real-time</p>
+            <p className="text-6xl mb-4">{'\u{1F468}\u{200D}\u{1F373}'}</p>
+            <p className="text-xl">{t('noActiveOrders')}</p>
+            <p className="text-sm mt-2">{t('ordersAppearHere')}</p>
           </div>
         )}
       </div>

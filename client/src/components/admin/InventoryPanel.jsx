@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { menuApi } from '../../utils/api';
+import { useLanguage } from '../../utils/LanguageContext';
+import { getItemEmoji } from '../../utils/i18n';
 
 function InventoryPanel() {
   const [items, setItems] = useState([]);
@@ -15,7 +17,10 @@ function InventoryPanel() {
     stock_quantity: '',
     is_available: true,
     image_url: '',
+    is_favourite: false,
+    discount_percent: 0,
   });
+  const { t } = useLanguage();
 
   useEffect(() => {
     loadItems();
@@ -95,6 +100,8 @@ function InventoryPanel() {
       stock_quantity: item.stock_quantity.toString(),
       is_available: item.is_available,
       image_url: item.image_url || '',
+      is_favourite: item.is_favourite || false,
+      discount_percent: parseFloat(item.discount_percent) || 0,
     });
     setShowForm(true);
   };
@@ -109,7 +116,18 @@ function InventoryPanel() {
       stock_quantity: '',
       is_available: true,
       image_url: '',
+      is_favourite: false,
+      discount_percent: 0,
     });
+  };
+
+  const toggleFavourite = async (item) => {
+    try {
+      await menuApi.update(item.id, { ...item, is_favourite: !item.is_favourite });
+      loadItems();
+    } catch (err) {
+      notify('error', 'Failed to toggle favourite');
+    }
   };
 
   const notify = (type, message) => {
@@ -136,7 +154,7 @@ function InventoryPanel() {
       )}
 
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">Inventory Management</h2>
+        <h2 className="text-2xl font-bold text-gray-800">{t('inventoryManagement')}</h2>
         <button
           onClick={() => {
             resetForm();
@@ -144,14 +162,14 @@ function InventoryPanel() {
           }}
           className="btn btn-primary"
         >
-          + Add Item
+          + {t('addItem')}
         </button>
       </div>
 
       {/* Low Stock Alert */}
       {lowStockItems.length > 0 && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-          <h3 className="font-bold text-red-700 mb-2">Low Stock Alert</h3>
+          <h3 className="font-bold text-red-700 mb-2">{t('lowStockAlert')}</h3>
           <div className="flex flex-wrap gap-2">
             {lowStockItems.map((item) => (
               <span key={item.id} className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm">
@@ -166,11 +184,11 @@ function InventoryPanel() {
       {showForm && (
         <div className="card mb-6">
           <h3 className="font-bold text-lg mb-4">
-            {editingItem ? 'Edit Item' : 'Add New Item'}
+            {editingItem ? t('editItem') : t('addNewItem')}
           </h3>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('name')}</label>
               <input
                 type="text"
                 value={formData.name}
@@ -180,7 +198,7 @@ function InventoryPanel() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Price (₹)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('price')} ({`\u{20B9}`})</label>
               <input
                 type="number"
                 value={formData.price}
@@ -192,7 +210,7 @@ function InventoryPanel() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('category')}</label>
               <input
                 type="text"
                 value={formData.category}
@@ -208,7 +226,7 @@ function InventoryPanel() {
               </datalist>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Stock Quantity</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('stockQuantity')}</label>
               <input
                 type="number"
                 value={formData.stock_quantity}
@@ -216,6 +234,18 @@ function InventoryPanel() {
                 className="input"
                 min="0"
                 required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('discountPercent')}</label>
+              <input
+                type="number"
+                value={formData.discount_percent}
+                onChange={(e) => setFormData({ ...formData, discount_percent: parseFloat(e.target.value) || 0 })}
+                className="input"
+                min="0"
+                max="100"
+                step="0.5"
               />
             </div>
             <div className="flex items-end gap-4">
@@ -226,15 +256,24 @@ function InventoryPanel() {
                   onChange={(e) => setFormData({ ...formData, is_available: e.target.checked })}
                   className="w-4 h-4 text-blue-600"
                 />
-                <span className="text-sm font-medium text-gray-700">Available</span>
+                <span className="text-sm font-medium text-gray-700">{t('available')}</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={formData.is_favourite}
+                  onChange={(e) => setFormData({ ...formData, is_favourite: e.target.checked })}
+                  className="w-4 h-4 text-orange-500"
+                />
+                <span className="text-sm font-medium text-gray-700">{'\u{2B50}'} {t('favourite')}</span>
               </label>
             </div>
             <div className="flex items-end gap-2">
               <button type="submit" className="btn btn-success">
-                {editingItem ? 'Update' : 'Add Item'}
+                {editingItem ? t('update') : t('addItem')}
               </button>
               <button type="button" onClick={resetForm} className="btn btn-secondary">
-                Cancel
+                {t('cancel')}
               </button>
             </div>
           </form>
@@ -273,20 +312,32 @@ function InventoryPanel() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-200">
-              <th className="text-left py-3 px-2">Name</th>
-              <th className="text-left py-3 px-2">Category</th>
-              <th className="text-right py-3 px-2">Price</th>
-              <th className="text-center py-3 px-2">Stock</th>
-              <th className="text-center py-3 px-2">Status</th>
-              <th className="text-center py-3 px-2">Actions</th>
+              <th className="text-left py-3 px-2">{t('name')}</th>
+              <th className="text-left py-3 px-2">{t('category')}</th>
+              <th className="text-right py-3 px-2">{t('price')}</th>
+              <th className="text-right py-3 px-2">{t('discountPercent')}</th>
+              <th className="text-center py-3 px-2">{t('stock')}</th>
+              <th className="text-center py-3 px-2">{t('favourite')}</th>
+              <th className="text-center py-3 px-2">{t('status')}</th>
+              <th className="text-center py-3 px-2">{t('actions')}</th>
             </tr>
           </thead>
           <tbody>
             {filteredItems.map((item) => (
               <tr key={item.id} className="border-b border-gray-50 hover:bg-gray-50">
-                <td className="py-3 px-2 font-medium">{item.name}</td>
+                <td className="py-3 px-2 font-medium">
+                  <span className="mr-1">{getItemEmoji(item.name)}</span>
+                  {item.name}
+                </td>
                 <td className="py-3 px-2 text-gray-500">{item.category}</td>
-                <td className="py-3 px-2 text-right font-medium">₹{parseFloat(item.price).toFixed(2)}</td>
+                <td className="py-3 px-2 text-right font-medium">{'\u{20B9}'}{parseFloat(item.price).toFixed(2)}</td>
+                <td className="py-3 px-2 text-right">
+                  {parseFloat(item.discount_percent) > 0 ? (
+                    <span className="text-red-600 font-bold">{parseFloat(item.discount_percent)}%</span>
+                  ) : (
+                    <span className="text-gray-400">-</span>
+                  )}
+                </td>
                 <td className="py-3 px-2">
                   <div className="flex items-center justify-center gap-2">
                     <button
@@ -311,6 +362,17 @@ function InventoryPanel() {
                   </div>
                 </td>
                 <td className="py-3 px-2 text-center">
+                  <button
+                    onClick={() => toggleFavourite(item)}
+                    className={`text-lg transition-transform hover:scale-125 ${
+                      item.is_favourite ? 'opacity-100' : 'opacity-30'
+                    }`}
+                    title={item.is_favourite ? 'Remove from favourites' : 'Add to favourites'}
+                  >
+                    {'\u{2B50}'}
+                  </button>
+                </td>
+                <td className="py-3 px-2 text-center">
                   <span
                     className={`px-2 py-1 rounded-full text-xs font-bold ${
                       item.is_available
@@ -318,7 +380,7 @@ function InventoryPanel() {
                         : 'bg-red-100 text-red-700'
                     }`}
                   >
-                    {item.is_available ? 'Available' : 'Out of Stock'}
+                    {item.is_available ? t('available') : t('outOfStock')}
                   </span>
                 </td>
                 <td className="py-3 px-2 text-center">
@@ -326,13 +388,13 @@ function InventoryPanel() {
                     onClick={() => startEdit(item)}
                     className="text-blue-600 hover:text-blue-800 mr-3 text-xs font-medium"
                   >
-                    Edit
+                    {t('edit')}
                   </button>
                   <button
                     onClick={() => handleDelete(item.id)}
                     className="text-red-600 hover:text-red-800 text-xs font-medium"
                   >
-                    Delete
+                    {t('delete')}
                   </button>
                 </td>
               </tr>

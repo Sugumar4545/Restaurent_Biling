@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { workersApi, attendanceApi } from '../../utils/api';
+import { useLanguage } from '../../utils/LanguageContext';
 
 function StaffPanel() {
   const [workers, setWorkers] = useState([]);
@@ -14,6 +15,7 @@ function StaffPanel() {
     role: 'Staff',
     phone: '',
   });
+  const { t, language } = useLanguage();
 
   useEffect(() => {
     loadWorkers();
@@ -147,19 +149,19 @@ function StaffPanel() {
       )}
 
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">Staff Management</h2>
+        <h2 className="text-2xl font-bold text-gray-800">{t('staffManagement')}</h2>
         <div className="flex gap-2">
           <button
             onClick={() => setActiveTab('workers')}
             className={`btn ${activeTab === 'workers' ? 'btn-primary' : 'btn-secondary'}`}
           >
-            Workers
+            {t('staff')}
           </button>
           <button
             onClick={() => setActiveTab('attendance')}
             className={`btn ${activeTab === 'attendance' ? 'btn-primary' : 'btn-secondary'}`}
           >
-            Attendance
+            {t('attendance')}
           </button>
         </div>
       </div>
@@ -174,18 +176,18 @@ function StaffPanel() {
               }}
               className="btn btn-primary"
             >
-              + Add Worker
+              {t('addWorker')}
             </button>
           </div>
 
           {showForm && (
             <div className="card mb-6">
               <h3 className="font-bold text-lg mb-4">
-                {editingWorker ? 'Edit Worker' : 'Add New Worker'}
+                {editingWorker ? t('editItem') : t('addWorker')}
               </h3>
               <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('name')}</label>
                   <input
                     type="text"
                     value={formData.name}
@@ -195,7 +197,7 @@ function StaffPanel() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('role')}</label>
                   <select
                     value={formData.role}
                     onChange={(e) => setFormData({ ...formData, role: e.target.value })}
@@ -208,7 +210,7 @@ function StaffPanel() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('phone')}</label>
                   <input
                     type="text"
                     value={formData.phone}
@@ -218,10 +220,10 @@ function StaffPanel() {
                 </div>
                 <div className="sm:col-span-3 flex gap-2">
                   <button type="submit" className="btn btn-success">
-                    {editingWorker ? 'Update' : 'Add'}
+                    {editingWorker ? t('update') : t('addItem')}
                   </button>
                   <button type="button" onClick={resetForm} className="btn btn-secondary">
-                    Cancel
+                    {t('cancel')}
                   </button>
                 </div>
               </form>
@@ -232,12 +234,12 @@ function StaffPanel() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-2">Name</th>
-                  <th className="text-left py-3 px-2">Role</th>
-                  <th className="text-left py-3 px-2">Phone</th>
-                  <th className="text-left py-3 px-2">Joining Date</th>
-                  <th className="text-center py-3 px-2">Status</th>
-                  <th className="text-center py-3 px-2">Actions</th>
+                  <th className="text-left py-3 px-2">{t('name')}</th>
+                  <th className="text-left py-3 px-2">{t('role')}</th>
+                  <th className="text-left py-3 px-2">{t('phone')}</th>
+                  <th className="text-left py-3 px-2">{t('joiningDate')}</th>
+                  <th className="text-center py-3 px-2">{t('status')}</th>
+                  <th className="text-center py-3 px-2">{t('actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -251,7 +253,7 @@ function StaffPanel() {
                     </td>
                     <td className="py-3 px-2 text-gray-500">{worker.phone || '-'}</td>
                     <td className="py-3 px-2 text-gray-500">
-                      {new Date(worker.joining_date).toLocaleDateString('en-IN')}
+                      {new Date(worker.joining_date).toLocaleDateString(language === 'ta' ? 'ta-IN' : 'en-IN')}
                     </td>
                     <td className="py-3 px-2 text-center">
                       <span
@@ -261,7 +263,7 @@ function StaffPanel() {
                             : 'bg-red-100 text-red-700'
                         }`}
                       >
-                        {worker.is_active ? 'Active' : 'Inactive'}
+                        {worker.is_active ? t('available') : t('outOfStock')}
                       </span>
                     </td>
                     <td className="py-3 px-2 text-center">
@@ -269,13 +271,13 @@ function StaffPanel() {
                         onClick={() => startEdit(worker)}
                         className="text-blue-600 hover:text-blue-800 mr-3 text-xs font-medium"
                       >
-                        Edit
+                        {t('edit')}
                       </button>
                       <button
                         onClick={() => handleDelete(worker.id)}
                         className="text-red-600 hover:text-red-800 text-xs font-medium"
                       >
-                        Delete
+                        {t('delete')}
                       </button>
                     </td>
                   </tr>
@@ -289,7 +291,7 @@ function StaffPanel() {
       {activeTab === 'attendance' && (
         <>
           <div className="flex items-center gap-4 mb-4">
-            <label className="text-sm font-medium text-gray-700">Date:</label>
+            <label className="text-sm font-medium text-gray-700">{t('joiningDate')}:</label>
             <input
               type="date"
               value={attendanceDate}
@@ -302,12 +304,12 @@ function StaffPanel() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-2">Name</th>
-                  <th className="text-left py-3 px-2">Role</th>
-                  <th className="text-center py-3 px-2">Status</th>
-                  <th className="text-center py-3 px-2">Check In</th>
-                  <th className="text-center py-3 px-2">Check Out</th>
-                  <th className="text-center py-3 px-2">Actions</th>
+                  <th className="text-left py-3 px-2">{t('name')}</th>
+                  <th className="text-left py-3 px-2">{t('role')}</th>
+                  <th className="text-center py-3 px-2">{t('status')}</th>
+                  <th className="text-center py-3 px-2">{t('checkIn')}</th>
+                  <th className="text-center py-3 px-2">{t('checkOut')}</th>
+                  <th className="text-center py-3 px-2">{t('actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -362,13 +364,13 @@ function StaffPanel() {
                                 onClick={() => handleCheckIn(worker.id)}
                                 className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200"
                               >
-                                Check In
+                                {t('checkIn')}
                               </button>
                               <button
                                 onClick={() => handleMarkAbsent(worker.id)}
                                 className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200"
                               >
-                                Absent
+                                {t('absent')}
                               </button>
                             </>
                           )}
@@ -377,7 +379,7 @@ function StaffPanel() {
                               onClick={() => handleCheckOut(worker.id)}
                               className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
                             >
-                              Check Out
+                              {t('checkOut')}
                             </button>
                           )}
                         </div>

@@ -82,6 +82,20 @@ const migrate = async () => {
       );
     `);
 
+    // Add new columns if they don't exist (favourite, discount)
+    await client.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='menu_items' AND column_name='is_favourite') THEN
+          ALTER TABLE menu_items ADD COLUMN is_favourite BOOLEAN DEFAULT false;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='menu_items' AND column_name='discount_percent') THEN
+          ALTER TABLE menu_items ADD COLUMN discount_percent DECIMAL(5,2) DEFAULT 0;
+        END IF;
+      END
+      $$;
+    `);
+
     await client.query('COMMIT');
     console.log('Migration completed successfully!');
   } catch (err) {

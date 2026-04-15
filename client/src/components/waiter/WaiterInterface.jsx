@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { menuApi, ordersApi } from '../../utils/api';
+import { menuApi, ordersApi, reportsApi } from '../../utils/api';
 import socket from '../../utils/socket';
+import { useLanguage } from '../../utils/LanguageContext';
+import { getItemEmoji } from '../../utils/i18n';
 
 const TABLES = Array.from({ length: 10 }, (_, i) => i + 1);
 
@@ -15,11 +17,24 @@ function WaiterInterface() {
   const [specialInstructions, setSpecialInstructions] = useState('');
   const [loading, setLoading] = useState(false);
   const [notification, setNotification] = useState(null);
+  const [topSellingNames, setTopSellingNames] = useState([]);
+  const { t } = useLanguage();
 
   useEffect(() => {
     loadMenu();
     loadCategories();
+    loadTopSelling();
   }, []);
+
+  const loadTopSelling = async () => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const data = await reportsApi.getTopSelling(today, 5);
+      setTopSellingNames(data.map((d) => d.item_name));
+    } catch (err) {
+      // Top selling data is optional, fail silently
+    }
+  };
 
   const loadMenu = async () => {
     try {
@@ -39,11 +54,26 @@ function WaiterInterface() {
     }
   };
 
-  const filteredItems = menuItems.filter((item) => {
-    const matchCategory = selectedCategory === 'All' || item.category === selectedCategory;
-    const matchSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchCategory && matchSearch && item.is_available;
-  });
+  const filteredItems = menuItems
+    .filter((item) => {
+      const matchCategory = selectedCategory === 'All' || item.category === selectedCategory;
+      const matchSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
+      return matchCategory && matchSearch && item.is_available;
+    })
+    .sort((a, b) => {
+      // Favourites first
+      if (a.is_favourite && !b.is_favourite) return -1;
+      if (!a.is_favourite && b.is_favourite) return 1;
+      return 0;
+    });
+
+  const isTableRequired = orderType === 'dine-in' && !selectedTable;
+
+  const getDiscountedPrice = (item) => {
+    const discount = parseFloat(item.discount_percent) || 0;
+    if (discount <= 0) return null;
+    return parseFloat(item.price) * (1 - discount / 100);
+  };
 
   const addToCart = (item) => {
     setCart((prev) => {
@@ -88,12 +118,12 @@ function WaiterInterface() {
     });
   };
 
-  const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const cartTotal = cart.reduce((sum, c) => sum + c.price * c.quantity, 0);
 
   const sendToKitchen = async () => {
     if (cart.length === 0) return;
     if (orderType === 'dine-in' && !selectedTable) {
-      setNotification({ type: 'error', message: 'Please select a table first!' });
+      setNotification({ type: 'error', message: t('selectTableFirst') });
       setTimeout(() => setNotification(null), 3000);
       return;
     }
@@ -109,7 +139,7 @@ function WaiterInterface() {
 
       await ordersApi.create(orderData);
 
-      setNotification({ type: 'success', message: 'Order sent to kitchen!' });
+      setNotification({ type: 'success', message: t('orderSent') });
       setCart([]);
       setSpecialInstructions('');
       setSelectedTable(null);
@@ -145,30 +175,30 @@ function WaiterInterface() {
                 onClick={() => setOrderType('dine-in')}
                 className={`btn ${orderType === 'dine-in' ? 'btn-primary' : 'btn-secondary'}`}
               >
-                🍽️ Dine-in
+                {'\u{1F37D}\u{FE0F}'} {t('dineIn')}
               </button>
               <button
                 onClick={() => { setOrderType('parcel'); setSelectedTable(null); }}
                 className={`btn ${orderType === 'parcel' ? 'btn-primary' : 'btn-secondary'}`}
               >
-                📦 Parcel
+                {'\u{1F4E6}'} {t('parcel')}
               </button>
             </div>
 
             {orderType === 'dine-in' && (
               <div className="flex gap-2 flex-wrap">
-                <span className="text-sm font-medium text-gray-600 self-center">Table:</span>
-                {TABLES.map((t) => (
+                <span className="text-sm font-medium text-gray-600 self-center">{t('table')}:</span>
+                {TABLES.map((tbl) => (
                   <button
-                    key={t}
-                    onClick={() => setSelectedTable(t)}
+                    key={tbl}
+                    onClick={() => setSelectedTable(tbl)}
                     className={`w-10 h-10 rounded-lg text-sm font-bold transition-all ${
-                      selectedTable === t
+                      selectedTable === tbl
                         ? 'bg-blue-600 text-white shadow-md scale-110'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
-                    {t}
+                    {tbl}
                   </button>
                 ))}
               </div>
@@ -176,14 +206,25 @@ function WaiterInterface() {
           </div>
         </div>
 
+        {/* Table selection guard overlay */}
+        {isTableRequired && (
+          <div className="card mb-4 bg-amber-50 border-2 border-amber-300">
+            <div className="flex items-center gap-3 text-amber-700">
+              <span className="text-2xl">{'\u{26A0}\u{FE0F}'}</span>
+              <p className="font-semibold">{t('selectTableToOrder')}</p>
+            </div>
+          </div>
+        )}
+
         {/* Search & Categories */}
-        <div className="card mb-4">
+        <div className={`card mb-4 ${isTableRequired ? 'opacity-50 pointer-events-none' : ''}`}>
           <input
             type="text"
-            placeholder="Search menu items..."
+            placeholder={t('searchMenu')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="input mb-3"
+            disabled={isTableRequired}
           />
           <div className="flex gap-2 flex-wrap">
             {categories.map((cat) => (
@@ -203,30 +244,64 @@ function WaiterInterface() {
         </div>
 
         {/* Menu Grid */}
-        <div className="flex-1 overflow-y-auto">
+        <div className={`flex-1 overflow-y-auto ${isTableRequired ? 'opacity-40 pointer-events-none' : ''}`}>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {filteredItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => addToCart(item)}
-                className="card hover:shadow-lg hover:scale-[1.02] transition-all text-left group cursor-pointer"
-              >
-                <div className="flex flex-col h-full">
-                  <h3 className="font-semibold text-gray-800 text-sm">{item.name}</h3>
-                  <p className="text-xs text-gray-500 mt-1">{item.category}</p>
-                  <div className="flex items-center justify-between mt-auto pt-2">
-                    <span className="text-lg font-bold text-green-600">₹{item.price}</span>
-                    <span className="text-xs text-gray-400">Stock: {item.stock_quantity}</span>
+            {filteredItems.map((item) => {
+              const discountedPrice = getDiscountedPrice(item);
+              const isTopSelling = topSellingNames.includes(item.name);
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => addToCart(item)}
+                  className={`card hover:shadow-lg hover:scale-[1.02] transition-all text-left group cursor-pointer relative ${
+                    item.is_favourite ? 'ring-2 ring-orange-300 bg-orange-50/30' : ''
+                  }`}
+                  disabled={isTableRequired}
+                >
+                  <div className="flex flex-col h-full">
+                    {/* Badges row */}
+                    <div className="flex items-center gap-1 mb-1">
+                      {item.is_favourite && (
+                        <span className="bg-orange-100 text-orange-600 text-[10px] px-1.5 py-0.5 rounded-full font-bold">
+                          {'\u{2B50}'} {t('favourite')}
+                        </span>
+                      )}
+                      {isTopSelling && (
+                        <span className="bg-red-100 text-red-600 text-[10px] px-1.5 py-0.5 rounded-full font-bold animate-pulse">
+                          {'\u{1F525}'} {t('topSelling')}
+                        </span>
+                      )}
+                    </div>
+                    {/* Item icon + name */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">{getItemEmoji(item.name)}</span>
+                      <h3 className="font-semibold text-gray-800 text-sm">{item.name}</h3>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">{item.category}</p>
+                    <div className="flex items-center justify-between mt-auto pt-2">
+                      <div>
+                        {discountedPrice ? (
+                          <div className="flex flex-col">
+                            <span className="text-xs text-gray-400 line-through">{`\u{20B9}`}{parseFloat(item.price).toFixed(0)}</span>
+                            <span className="text-lg font-bold text-green-600">{`\u{20B9}`}{discountedPrice.toFixed(0)}</span>
+                            <span className="text-[10px] font-bold text-red-500">{parseFloat(item.discount_percent)}% {t('off')}</span>
+                          </div>
+                        ) : (
+                          <span className="text-lg font-bold text-green-600">{`\u{20B9}`}{parseFloat(item.price).toFixed(0)}</span>
+                        )}
+                      </div>
+                      <span className="text-xs text-gray-400">{t('stock')}: {item.stock_quantity}</span>
+                    </div>
+                    <div className="mt-2 text-center text-xs font-medium text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {t('addToOrder')}
+                    </div>
                   </div>
-                  <div className="mt-2 text-center text-xs font-medium text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                    + Add to Order
-                  </div>
-                </div>
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
           {filteredItems.length === 0 && (
-            <div className="text-center text-gray-400 py-12">No items found</div>
+            <div className="text-center text-gray-400 py-12">{t('noItemsFound')}</div>
           )}
         </div>
       </div>
@@ -236,16 +311,16 @@ function WaiterInterface() {
         <div className="card flex-1 flex flex-col">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-gray-800">
-              Current Order
+              {t('currentOrder')}
               {selectedTable && orderType === 'dine-in' && (
-                <span className="ml-2 text-sm font-normal text-blue-600">Table #{selectedTable}</span>
+                <span className="ml-2 text-sm font-normal text-blue-600">{t('table')} #{selectedTable}</span>
               )}
               {orderType === 'parcel' && (
-                <span className="ml-2 text-sm font-normal text-orange-600">Parcel</span>
+                <span className="ml-2 text-sm font-normal text-orange-600">{t('parcel')}</span>
               )}
             </h2>
             <span className="bg-blue-100 text-blue-600 px-2 py-1 rounded-full text-xs font-bold">
-              {cart.length} items
+              {cart.length} {t('items')}
             </span>
           </div>
 
@@ -253,9 +328,9 @@ function WaiterInterface() {
           <div className="flex-1 overflow-y-auto space-y-3">
             {cart.length === 0 ? (
               <div className="text-center text-gray-400 py-8">
-                <p className="text-4xl mb-2">🛒</p>
-                <p>No items in cart</p>
-                <p className="text-xs mt-1">Tap menu items to add</p>
+                <p className="text-4xl mb-2">{'\u{1F6D2}'}</p>
+                <p>{t('noItemsInCart')}</p>
+                <p className="text-xs mt-1">{t('tapToAdd')}</p>
               </div>
             ) : (
               cart.map((item) => (
@@ -298,7 +373,7 @@ function WaiterInterface() {
                       className="text-xs border border-gray-200 rounded px-2 py-1 flex-1 mr-2"
                     />
                     <span className="font-semibold text-sm text-green-600">
-                      ₹{(item.price * item.quantity).toFixed(2)}
+                      {'\u{20B9}'}{(item.price * item.quantity).toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -309,14 +384,14 @@ function WaiterInterface() {
           {/* Cart Footer */}
           <div className="border-t border-gray-200 pt-4 mt-4 space-y-3">
             <textarea
-              placeholder="Order special instructions (e.g., allergies, preferences)..."
+              placeholder={t('orderInstructions')}
               value={specialInstructions}
               onChange={(e) => setSpecialInstructions(e.target.value)}
               className="input text-sm resize-none h-16"
             />
             <div className="flex items-center justify-between text-lg font-bold">
-              <span>Total:</span>
-              <span className="text-green-600">₹{cartTotal.toFixed(2)}</span>
+              <span>{t('total')}:</span>
+              <span className="text-green-600">{'\u{20B9}'}{cartTotal.toFixed(2)}</span>
             </div>
             <button
               onClick={sendToKitchen}
@@ -327,7 +402,7 @@ function WaiterInterface() {
                   : 'bg-green-600 hover:bg-green-700 shadow-lg hover:shadow-xl'
               }`}
             >
-              {loading ? 'Sending...' : '🔔 Send to Kitchen'}
+              {loading ? t('sending') : `\u{1F514} ${t('sendToKitchen')}`}
             </button>
           </div>
         </div>

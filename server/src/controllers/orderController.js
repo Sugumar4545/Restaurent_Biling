@@ -1,11 +1,14 @@
 const pool = require('../config/db');
 const { v4: uuidv4 } = require('uuid');
 
-// Generate order ID
-const generateOrderId = () => {
-  const timestamp = Date.now().toString(36).toUpperCase();
+// Generate meaningful order ID with date and type
+const generateOrderId = (orderType) => {
+  const now = new Date();
+  const dateStr = now.toISOString().slice(2, 10).replace(/-/g, ''); // YYMMDD
+  const timeStr = now.toTimeString().slice(0, 5).replace(':', ''); // HHMM
+  const prefix = orderType === 'parcel' ? 'PCL' : 'DIN';
   const random = Math.random().toString(36).substring(2, 5).toUpperCase();
-  return `ORD-${timestamp}-${random}`;
+  return `${prefix}-${dateStr}-${timeStr}-${random}`;
 };
 
 // Create a new order
@@ -15,7 +18,7 @@ const createOrder = async (req, res) => {
     await client.query('BEGIN');
 
     const { table_number, items, order_type, special_instructions } = req.body;
-    const orderId = generateOrderId();
+    const orderId = generateOrderId(order_type || 'dine-in');
 
     // Fetch actual prices from database to prevent price manipulation
     const menuItemIds = items.map(item => item.menu_item_id);
@@ -101,7 +104,11 @@ const createOrder = async (req, res) => {
   } catch (err) {
     await client.query('ROLLBACK');
     console.error('Error creating order:', err);
-    res.status(500).json({ error: 'Failed to create order' });
+    const isValidationError = err.message.startsWith('Menu item not found') ||
+      err.message.startsWith('Invalid quantity') ||
+      err.message.startsWith('Insufficient stock');
+    const status = isValidationError ? 400 : 500;
+    res.status(status).json({ error: isValidationError ? err.message : 'Failed to create order' });
   } finally {
     client.release();
   }
@@ -269,12 +276,18 @@ const billOrder = async (req, res) => {
     const taxAmount = (parseFloat(order.total_amount) * (tax_percent || 0)) / 100;
     const discount = discount_amount || 0;
     const finalAmount = parseFloat(order.total_amount) + taxAmount - discount;
+    if (finalAmount < 0) {
+      return res.status(400).json({ error: 'Discount cannot exceed the total amount plus tax' });
+    }
 
     const result = await pool.query(
       `UPDATE orders SET tax_amount = $1, discount_amount = $2, final_amount = $3,
-       status = 'Paid', updated_at = NOW() WHERE order_id = $4 RETURNING *`,
+       status = 'Paid', updated_at = NOW() WHERE order_id = $4 AND status != 'Paid' RETURNING *`,
       [taxAmount, discount, finalAmount, orderId]
     );
+    if (result.rows.length === 0) {
+      return res.status(400).json({ error: 'Order is already paid or was modified concurrently' });
+    }
 
     // Fetch complete order
     const completeOrder = await pool.query(

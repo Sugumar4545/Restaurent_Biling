@@ -17,7 +17,7 @@ const getMenuItems = async (req, res) => {
       query += ` AND name ILIKE $${params.length}`;
     }
 
-    query += ' ORDER BY category, name';
+    query += ' ORDER BY is_favourite DESC NULLS LAST, category, name';
 
     const result = await pool.query(query, params);
     res.json(result.rows);
@@ -58,11 +58,11 @@ const getMenuItem = async (req, res) => {
 // Create menu item
 const createMenuItem = async (req, res) => {
   try {
-    const { name, price, category, stock_quantity, is_available, image_url } = req.body;
+    const { name, price, category, stock_quantity, is_available, image_url, is_favourite, discount_percent } = req.body;
     const result = await pool.query(
-      `INSERT INTO menu_items (name, price, category, stock_quantity, is_available, image_url)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [name, price, category, stock_quantity || 0, is_available !== false, image_url || '']
+      `INSERT INTO menu_items (name, price, category, stock_quantity, is_available, image_url, is_favourite, discount_percent)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      [name, price, category, stock_quantity || 0, is_available !== false, image_url || '', is_favourite || false, discount_percent || 0]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -75,11 +75,11 @@ const createMenuItem = async (req, res) => {
 const updateMenuItem = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, price, category, stock_quantity, is_available, image_url } = req.body;
+    const { name, price, category, stock_quantity, is_available, image_url, is_favourite, discount_percent } = req.body;
     const result = await pool.query(
       `UPDATE menu_items SET name = $1, price = $2, category = $3, stock_quantity = $4,
-       is_available = $5, image_url = $6, updated_at = NOW() WHERE id = $7 RETURNING *`,
-      [name, price, category, stock_quantity, is_available, image_url, id]
+       is_available = $5, image_url = $6, is_favourite = $7, discount_percent = $8, updated_at = NOW() WHERE id = $9 RETURNING *`,
+      [name, price, category, stock_quantity, is_available, image_url, is_favourite || false, discount_percent || 0, id]
     );
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Menu item not found' });

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
+import { useLanguage } from './utils/LanguageContext';
 import WaiterInterface from './components/waiter/WaiterInterface';
 import KitchenDisplay from './components/kitchen/KitchenDisplay';
 import CustomerDashboard from './components/customer/CustomerDashboard';
@@ -9,20 +10,21 @@ import InventoryPanel from './components/admin/InventoryPanel';
 import StaffPanel from './components/admin/StaffPanel';
 import ReportsPanel from './components/admin/ReportsPanel';
 
-const navItems = [
-  { path: '/', label: 'Waiter', icon: '📝', description: 'Take Orders' },
-  { path: '/kitchen', label: 'Kitchen', icon: '👨‍🍳', description: 'Kitchen Display' },
-  { path: '/customer', label: 'Customer', icon: '📺', description: 'Order Status' },
-  { path: '/admin', label: 'Admin', icon: '⚙️', description: 'Dashboard' },
-  { path: '/admin/billing', label: 'Billing', icon: '💰', description: 'Invoices', sub: true },
-  { path: '/admin/inventory', label: 'Inventory', icon: '📦', description: 'Stock', sub: true },
-  { path: '/admin/staff', label: 'Staff', icon: '👥', description: 'Employees', sub: true },
-  { path: '/admin/reports', label: 'Reports', icon: '📊', description: 'Analytics', sub: true },
-];
-
 function App() {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+  const { language, toggleLanguage, t } = useLanguage();
+
+  const navItems = [
+    { path: '/', label: t('waiter'), icon: '\u{1F4DD}', description: t('takeOrders') },
+    { path: '/kitchen', label: t('kitchen'), icon: '\u{1F468}\u{200D}\u{1F373}', description: t('kitchenDisplay') },
+    { path: '/customer', label: t('customer'), icon: '\u{1F4FA}', description: t('orderStatus') },
+    { path: '/admin', label: t('admin'), icon: '\u{2699}\u{FE0F}', description: t('dashboard') },
+    { path: '/admin/billing', label: t('billing'), icon: '\u{1F4B0}', description: t('invoices'), sub: true },
+    { path: '/admin/inventory', label: t('inventory'), icon: '\u{1F4E6}', description: t('stock'), sub: true },
+    { path: '/admin/staff', label: t('staff'), icon: '\u{1F465}', description: t('employees'), sub: true },
+    { path: '/admin/reports', label: t('reports'), icon: '\u{1F4CA}', description: t('analytics'), sub: true },
+  ];
 
   const isCustomerDisplay = location.pathname === '/customer';
   const isAdminSection = location.pathname.startsWith('/admin');
@@ -46,9 +48,9 @@ function App() {
             {!collapsed && (
               <div className="overflow-hidden">
                 <h1 className="text-lg font-bold bg-gradient-to-r from-orange-300 to-yellow-200 bg-clip-text text-transparent">
-                  RestaurantPOS
+                  {t('hotelName')}
                 </h1>
-                <p className="text-[10px] text-slate-400 uppercase tracking-wider">Management System</p>
+                <p className="text-[10px] text-slate-400 uppercase tracking-wider">{t('posSystem')}</p>
               </div>
             )}
           </div>
@@ -58,14 +60,14 @@ function App() {
             onClick={() => setCollapsed(!collapsed)}
             className="mx-3 mt-3 mb-1 p-2 rounded-lg hover:bg-slate-700/50 transition-colors text-slate-400 hover:text-white text-xs flex items-center justify-center"
           >
-            {collapsed ? '→' : '← Collapse'}
+            {collapsed ? '\u{2192}' : `\u{2190} ${t('collapse')}`}
           </button>
 
           {/* Main Nav */}
           <div className="px-3 mt-2">
             {!collapsed && (
               <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-2 px-3">
-                Modules
+                {t('modules')}
               </p>
             )}
             <nav className="space-y-1">
@@ -108,9 +110,9 @@ function App() {
           {isAdminSection && (
             <div className="px-3 mt-4">
               {!collapsed && (
-                <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-2 px-3">
-                  Admin Tools
-                </p>
+                  <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-2 px-3">
+                    {t('adminTools')}
+                  </p>
               )}
               <nav className="space-y-1">
                 {adminSubItems.map((item) => {
@@ -151,9 +153,9 @@ function App() {
                 <div className="bg-slate-800/50 rounded-xl p-3">
                   <div className="flex items-center gap-2 mb-1">
                     <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                    <span className="text-[10px] text-green-400 font-medium">System Online</span>
+                    <span className="text-[10px] text-green-400 font-medium">{t('systemOnline')}</span>
                   </div>
-                  <p className="text-[10px] text-slate-500">Real-time updates active</p>
+                  <p className="text-[10px] text-slate-500">{t('realtimeActive')}</p>
                 </div>
               ) : (
                 <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse mx-auto"></div>
@@ -176,10 +178,10 @@ function App() {
                 <h2 className="text-lg font-bold text-gray-800">
                   {navItems.find(
                     (item) => item.path === location.pathname
-                  )?.label || 'Dashboard'}
+                  )?.label || t('dashboard')}
                 </h2>
                 <p className="text-xs text-gray-400">
-                  {new Date().toLocaleDateString('en-IN', {
+                  {new Date().toLocaleDateString(language === 'ta' ? 'ta-IN' : 'en-IN', {
                     weekday: 'long',
                     year: 'numeric',
                     month: 'long',
@@ -188,9 +190,20 @@ function App() {
                 </p>
               </div>
               <div className="flex items-center gap-3">
+                {/* Language Toggle */}
+                <button
+                  onClick={toggleLanguage}
+                  className="flex items-center gap-2 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 px-3 py-1.5 rounded-full hover:from-indigo-100 hover:to-purple-100 transition-all"
+                  title={t('language')}
+                >
+                  <span className="text-sm">{'\u{1F310}'}</span>
+                  <span className="text-xs font-semibold text-indigo-700">
+                    {language === 'en' ? 'EN' : '\u{0BA4}\u{0BAE}\u{0BBF}'}
+                  </span>
+                </button>
                 <div className="flex items-center gap-2 bg-gray-100 px-3 py-1.5 rounded-full">
                   <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-xs text-gray-600 font-medium">Live</span>
+                  <span className="text-xs text-gray-600 font-medium">{t('live')}</span>
                 </div>
               </div>
             </div>

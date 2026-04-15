@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { reportsApi } from '../../utils/api';
+import { useLanguage } from '../../utils/LanguageContext';
 import {
   BarChart,
   Bar,
@@ -19,6 +20,7 @@ import {
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
 
 function ReportsPanel() {
+  const { t } = useLanguage();
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [dailySales, setDailySales] = useState(null);
   const [topSelling, setTopSelling] = useState([]);
@@ -55,7 +57,7 @@ function ReportsPanel() {
   return (
     <div className="p-4">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">Reports & Analytics</h2>
+        <h2 className="text-2xl font-bold text-gray-800">{t('salesReports')}</h2>
         <div className="flex items-center gap-3">
           <label className="text-sm font-medium text-gray-600">Date:</label>
           <input
@@ -71,23 +73,23 @@ function ReportsPanel() {
       {dailySales && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
           <div className="card">
-            <p className="text-sm text-gray-500">Total Orders</p>
+            <p className="text-sm text-gray-500">{t('totalOrders')}</p>
             <p className="text-3xl font-bold text-gray-800">{dailySales.total_orders}</p>
           </div>
           <div className="card">
-            <p className="text-sm text-gray-500">Net Sales</p>
+            <p className="text-sm text-gray-500">{t('totalSales')}</p>
             <p className="text-3xl font-bold text-green-600">
               ₹{parseFloat(dailySales.net_sales).toFixed(0)}
             </p>
           </div>
           <div className="card">
-            <p className="text-sm text-gray-500">Dine-in / Parcel</p>
+            <p className="text-sm text-gray-500">{t('dineIn')} / {t('parcel')}</p>
             <p className="text-2xl font-bold text-blue-600">
               {dailySales.dine_in_orders} / {dailySales.parcel_orders}
             </p>
           </div>
           <div className="card">
-            <p className="text-sm text-gray-500">Paid Orders</p>
+            <p className="text-sm text-gray-500">{t('paid')} {t('orders')}</p>
             <p className="text-3xl font-bold text-purple-600">{dailySales.paid_orders}</p>
           </div>
         </div>
@@ -96,7 +98,7 @@ function ReportsPanel() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top Selling Items Chart */}
         <div className="card">
-          <h3 className="text-lg font-bold text-gray-800 mb-4">Top Selling Items</h3>
+          <h3 className="text-lg font-bold text-gray-800 mb-4">{t('topSellingItems')}</h3>
           {topSelling.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={topSelling}>
@@ -115,7 +117,7 @@ function ReportsPanel() {
 
         {/* Sales by Category Pie Chart */}
         <div className="card">
-          <h3 className="text-lg font-bold text-gray-800 mb-4">Sales by Category</h3>
+          <h3 className="text-lg font-bold text-gray-800 mb-4">{t('salesByCategory')}</h3>
           {categoryData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
@@ -146,7 +148,7 @@ function ReportsPanel() {
 
         {/* Hourly Sales Line Chart */}
         <div className="card lg:col-span-2">
-          <h3 className="text-lg font-bold text-gray-800 mb-4">Hourly Sales Trend</h3>
+          <h3 className="text-lg font-bold text-gray-800 mb-4">{t('hourlyTrend')}</h3>
           {hourlyData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={hourlyData}>
@@ -181,7 +183,7 @@ function ReportsPanel() {
 
         {/* Top Selling Table */}
         <div className="card lg:col-span-2">
-          <h3 className="text-lg font-bold text-gray-800 mb-4">Sales Details</h3>
+          <h3 className="text-lg font-bold text-gray-800 mb-4">{t('totalSales')} Details</h3>
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200">

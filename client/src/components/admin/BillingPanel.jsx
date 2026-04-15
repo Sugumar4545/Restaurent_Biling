@@ -3,6 +3,7 @@ import { ordersApi } from '../../utils/api';
 import socket from '../../utils/socket';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
+import { useLanguage } from '../../utils/LanguageContext';
 
 function BillingPanel() {
   const [orders, setOrders] = useState([]);
@@ -11,6 +12,8 @@ function BillingPanel() {
   const [discountAmount, setDiscountAmount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [notification, setNotification] = useState(null);
+  const [activeTab, setActiveTab] = useState('live'); // 'live' or 'history'
+  const { t, language } = useLanguage();
 
   useEffect(() => {
     loadOrders();
@@ -81,7 +84,7 @@ function BillingPanel() {
 
     // Header
     doc.setFontSize(20);
-    doc.text('Restaurant POS', pageWidth / 2, 20, { align: 'center' });
+    doc.text('RAMU Hotel POS', pageWidth / 2, 20, { align: 'center' });
     doc.setFontSize(10);
     doc.text('Tax Invoice', pageWidth / 2, 27, { align: 'center' });
 
@@ -155,9 +158,37 @@ function BillingPanel() {
 
       {/* Orders List */}
       <div className="flex-1 flex flex-col min-w-0">
-        <h2 className="text-xl font-bold text-gray-800 mb-4">Orders</h2>
+        {/* Tabs */}
+        <div className="flex items-center gap-2 mb-4">
+          <button
+            onClick={() => setActiveTab('live')}
+            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+              activeTab === 'live'
+                ? 'bg-blue-600 text-white shadow-md'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            {'\u{1F534}'} {t('liveOrders')} ({orders.filter((o) => ['Pending', 'Preparing', 'Ready'].includes(o.status)).length})
+          </button>
+          <button
+            onClick={() => setActiveTab('history')}
+            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+              activeTab === 'history'
+                ? 'bg-purple-600 text-white shadow-md'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            {'\u{1F4D6}'} {t('history')} ({orders.filter((o) => ['Paid', 'Cancelled'].includes(o.status)).length})
+          </button>
+        </div>
         <div className="flex-1 overflow-y-auto space-y-2">
-          {orders.map((order) => (
+          {orders
+            .filter((order) =>
+              activeTab === 'live'
+                ? ['Pending', 'Preparing', 'Ready'].includes(order.status)
+                : ['Paid', 'Cancelled'].includes(order.status)
+            )
+            .map((order) => (
             <button
               key={order.order_id}
               onClick={() => {
@@ -174,8 +205,8 @@ function BillingPanel() {
                 <div>
                   <h3 className="font-bold text-sm">{order.order_id}</h3>
                   <p className="text-xs text-gray-500">
-                    {order.table_number ? `Table #${order.table_number}` : 'Parcel'} |{' '}
-                    {new Date(order.created_at).toLocaleTimeString('en-IN', {
+                    {order.table_number ? `${t('table')} #${order.table_number}` : t('parcel')} |{' '}
+                    {new Date(order.created_at).toLocaleTimeString(language === 'ta' ? 'ta-IN' : 'en-IN', {
                       hour: '2-digit',
                       minute: '2-digit',
                     })}
@@ -185,13 +216,20 @@ function BillingPanel() {
                   <span className={`px-2 py-1 rounded-full text-xs font-bold ${getStatusBadge(order.status)}`}>
                     {order.status}
                   </span>
-                  <p className="text-sm font-bold mt-1">₹{parseFloat(order.final_amount).toFixed(2)}</p>
+                  <p className="text-sm font-bold mt-1">{'\u{20B9}'}{parseFloat(order.final_amount).toFixed(2)}</p>
                 </div>
               </div>
             </button>
           ))}
-          {orders.length === 0 && (
-            <div className="text-center text-gray-400 py-12">No orders today</div>
+          {orders
+            .filter((order) =>
+              activeTab === 'live'
+                ? ['Pending', 'Preparing', 'Ready'].includes(order.status)
+                : ['Paid', 'Cancelled'].includes(order.status)
+            ).length === 0 && (
+            <div className="text-center text-gray-400 py-12">
+              {activeTab === 'live' ? t('noLiveOrders') : t('noHistory')}
+            </div>
           )}
         </div>
       </div>
@@ -201,24 +239,24 @@ function BillingPanel() {
         <div className="card h-full flex flex-col">
           {selectedOrder ? (
             <>
-              <h2 className="text-lg font-bold mb-4">Invoice - {selectedOrder.order_id}</h2>
+              <h2 className="text-lg font-bold mb-4">{t('invoice')} - {selectedOrder.order_id}</h2>
 
               {/* Order Info */}
               <div className="bg-gray-50 rounded-lg p-3 mb-4 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Table:</span>
+                  <span className="text-gray-500">{t('table')}:</span>
                   <span className="font-medium">
                     {selectedOrder.table_number ? `#${selectedOrder.table_number}` : 'Parcel'}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Time:</span>
+                  <span className="text-gray-500">{t('time')}:</span>
                   <span className="font-medium">
                     {new Date(selectedOrder.created_at).toLocaleString('en-IN')}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Status:</span>
+                  <span className="text-gray-500">{t('status')}:</span>
                   <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${getStatusBadge(selectedOrder.status)}`}>
                     {selectedOrder.status}
                   </span>
@@ -282,7 +320,7 @@ function BillingPanel() {
               {/* Totals */}
               <div className="border-t border-gray-200 pt-3 space-y-1 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Subtotal:</span>
+                  <span className="text-gray-500">{t('subtotal')}:</span>
                   <span>₹{parseFloat(selectedOrder.total_amount).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
@@ -306,7 +344,7 @@ function BillingPanel() {
                   </span>
                 </div>
                 <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-200">
-                  <span>Total:</span>
+                  <span>{t('total')}:</span>
                   <span className="text-green-600">
                     ₹{selectedOrder.status === 'Paid'
                       ? parseFloat(selectedOrder.final_amount).toFixed(2)
@@ -327,22 +365,22 @@ function BillingPanel() {
                     disabled={loading}
                     className="flex-1 btn btn-success"
                   >
-                    {loading ? 'Processing...' : 'Mark as Paid'}
+                    {loading ? t('processing') : t('markAsPaid')}
                   </button>
                 )}
                 <button
                   onClick={() => generatePDF(selectedOrder)}
                   className="flex-1 btn btn-primary"
                 >
-                  Download Invoice
+                  {t('downloadInvoice')}
                 </button>
               </div>
             </>
           ) : (
             <div className="flex-1 flex items-center justify-center text-gray-400">
               <div className="text-center">
-                <p className="text-5xl mb-3">💰</p>
-                <p>Select an order to generate bill</p>
+                <p className="text-5xl mb-3">{'\u{1F4B0}'}</p>
+                <p>{t('selectOrderToBill')}</p>
               </div>
             </div>
           )}

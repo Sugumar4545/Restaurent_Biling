@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ordersApi } from '../../utils/api';
 import socket from '../../utils/socket';
+import { useLanguage } from '../../utils/LanguageContext';
 
 function CustomerDashboard() {
   const [orders, setOrders] = useState([]);
+  const { t, language } = useLanguage();
 
   const loadOrders = useCallback(async () => {
     try {
@@ -74,11 +76,11 @@ function CustomerDashboard() {
       <div className="bg-gradient-to-r from-blue-800 to-purple-800 px-8 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-3xl">🍽️</span>
-            <h1 className="text-2xl font-bold">Order Status Board</h1>
+            <span className="text-3xl">{'\u{1F37D}\u{FE0F}'}</span>
+            <h1 className="text-2xl font-bold">{t('orderStatusBoard')}</h1>
           </div>
           <div className="text-lg font-mono">
-            {new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+            {new Date().toLocaleTimeString(language === 'ta' ? 'ta-IN' : 'en-IN', { hour: '2-digit', minute: '2-digit' })}
           </div>
         </div>
       </div>
@@ -90,7 +92,7 @@ function CustomerDashboard() {
           <div className="flex items-center gap-3 mb-6">
             <div className="w-4 h-4 rounded-full bg-yellow-400 animate-pulse"></div>
             <h2 className="text-xl font-bold text-yellow-400">
-              PREPARING ({preparingOrders.length})
+              {t('preparing').toUpperCase()} ({preparingOrders.length})
             </h2>
           </div>
 
@@ -103,7 +105,7 @@ function CustomerDashboard() {
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-lg font-bold text-yellow-300">{order.order_id}</h3>
                   <span className="text-sm text-gray-400">
-                    {order.table_number ? `Table #${order.table_number}` : 'Parcel'}
+                    {order.table_number ? `${t('table')} #${order.table_number}` : t('parcel')}
                   </span>
                 </div>
                 <div className="space-y-1">
@@ -114,7 +116,7 @@ function CustomerDashboard() {
                   ))}
                 </div>
                 <div className="mt-3 text-xs text-gray-500">
-                  Ordered {getElapsedTime(order.created_at)} ago
+                  {t('ordered')} {getElapsedTime(order.created_at)} {t('ago')}
                 </div>
               </div>
             ))}
@@ -122,8 +124,8 @@ function CustomerDashboard() {
 
           {preparingOrders.length === 0 && (
             <div className="text-center text-gray-500 py-16">
-              <p className="text-5xl mb-3">🍳</p>
-              <p className="text-lg">No orders being prepared</p>
+              <p className="text-5xl mb-3">{'\u{1F373}'}</p>
+              <p className="text-lg">{t('noOrdersPreparing')}</p>
             </div>
           )}
         </div>
@@ -136,7 +138,7 @@ function CustomerDashboard() {
           <div className="flex items-center gap-3 mb-6">
             <div className="w-4 h-4 rounded-full bg-green-400 animate-pulse"></div>
             <h2 className="text-xl font-bold text-green-400">
-              READY FOR PICKUP ({readyOrders.length})
+              {t('readyForPickup')} ({readyOrders.length})
             </h2>
           </div>
 
@@ -153,7 +155,7 @@ function CustomerDashboard() {
                   </span>
                 </div>
                 <div className="text-sm text-gray-400 mb-1">
-                  {order.table_number ? `Table #${order.table_number}` : 'Parcel Order'}
+                  {order.table_number ? `${t('table')} #${order.table_number}` : t('parcelOrder')}
                 </div>
                 <div className="space-y-1">
                   {order.items && order.items.map((item, idx) => (
@@ -168,8 +170,8 @@ function CustomerDashboard() {
 
           {readyOrders.length === 0 && (
             <div className="text-center text-gray-500 py-16">
-              <p className="text-5xl mb-3">✅</p>
-              <p className="text-lg">No orders ready yet</p>
+              <p className="text-5xl mb-3">{'\u{2705}'}</p>
+              <p className="text-lg">{t('noOrdersReady')}</p>
             </div>
           )}
         </div>
