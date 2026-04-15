@@ -260,7 +260,13 @@ const billOrder = async (req, res) => {
     }
 
     const order = orderResult.rows[0];
-    const taxAmount = (order.total_amount * (tax_percent || 0)) / 100;
+    if (order.status === 'Paid') {
+      return res.status(400).json({ error: 'Order is already paid' });
+    }
+    if (order.status === 'Cancelled') {
+      return res.status(400).json({ error: 'Cannot bill a cancelled order' });
+    }
+    const taxAmount = (parseFloat(order.total_amount) * (tax_percent || 0)) / 100;
     const discount = discount_amount || 0;
     const finalAmount = parseFloat(order.total_amount) + taxAmount - discount;
 

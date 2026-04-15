@@ -286,7 +286,11 @@ function BillingPanel() {
                   <span>₹{parseFloat(selectedOrder.total_amount).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Tax ({taxPercent}%):</span>
+                  <span className="text-gray-500">
+                    {selectedOrder.status === 'Paid'
+                      ? `Tax (${((parseFloat(selectedOrder.tax_amount) / parseFloat(selectedOrder.total_amount)) * 100).toFixed(1)}%):`
+                      : `Tax (${taxPercent}%):`}
+                  </span>
                   <span>
                     ₹{selectedOrder.status === 'Paid'
                       ? parseFloat(selectedOrder.tax_amount).toFixed(2)
