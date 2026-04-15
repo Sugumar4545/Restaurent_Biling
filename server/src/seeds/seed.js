@@ -48,7 +48,7 @@ const seed = async () => {
       await client.query(
         `INSERT INTO menu_items (name, price, category, stock_quantity, image_url, is_available)
          VALUES ($1, $2, $3, $4, $5, true)
-         ON CONFLICT DO NOTHING`,
+         ON CONFLICT (name) DO NOTHING`,
         [item.name, item.price, item.category, item.stock_quantity, item.image_url]
       );
     }
@@ -67,7 +67,7 @@ const seed = async () => {
       await client.query(
         `INSERT INTO workers (name, role, phone)
          VALUES ($1, $2, $3)
-         ON CONFLICT DO NOTHING`,
+         ON CONFLICT (name, role) DO NOTHING`,
         [worker.name, worker.role, worker.phone]
       );
     }

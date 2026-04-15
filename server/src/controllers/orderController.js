@@ -17,10 +17,26 @@ const createOrder = async (req, res) => {
     const { table_number, items, order_type, special_instructions } = req.body;
     const orderId = generateOrderId();
 
-    // Calculate total
+    // Fetch actual prices from database to prevent price manipulation
+    const menuItemIds = items.map(item => item.menu_item_id);
+    const menuResult = await client.query(
+      `SELECT id, name, price FROM menu_items WHERE id = ANY($1)`,
+      [menuItemIds]
+    );
+    const menuMap = new Map(menuResult.rows.map(row => [row.id, row]));
+
+    // Validate all items exist
+    for (const item of items) {
+      if (!menuMap.has(item.menu_item_id)) {
+        throw new Error(`Menu item not found: ${item.menu_item_id}`);
+      }
+    }
+
+    // Calculate total using server-side prices
     let totalAmount = 0;
     for (const item of items) {
-      totalAmount += item.price * item.quantity;
+      const dbItem = menuMap.get(item.menu_item_id);
+      totalAmount += parseFloat(dbItem.price) * item.quantity;
     }
 
     // Create order
@@ -32,19 +48,24 @@ const createOrder = async (req, res) => {
 
     // Create order items and deduct stock
     for (const item of items) {
+      const dbItem = menuMap.get(item.menu_item_id);
+
       await client.query(
         `INSERT INTO order_items (order_id, menu_item_id, item_name, quantity, price, special_instructions)
          VALUES ($1, $2, $3, $4, $5, $6)`,
-        [orderId, item.menu_item_id, item.name, item.quantity, item.price, item.special_instructions || '']
+        [orderId, item.menu_item_id, dbItem.name, item.quantity, dbItem.price, item.special_instructions || '']
       );
 
-      // Auto-deduct stock
-      await client.query(
+      // Auto-deduct stock with validation to prevent negative stock
+      const stockResult = await client.query(
         `UPDATE menu_items SET stock_quantity = stock_quantity - $1,
          is_available = CASE WHEN stock_quantity - $1 > 0 THEN true ELSE false END
-         WHERE id = $2`,
+         WHERE id = $2 AND stock_quantity >= $1 RETURNING *`,
         [item.quantity, item.menu_item_id]
       );
+      if (stockResult.rows.length === 0) {
+        throw new Error(`Insufficient stock for item: ${dbItem.name}`);
+      }
     }
 
     await client.query('COMMIT');

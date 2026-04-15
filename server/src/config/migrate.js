@@ -10,10 +10,10 @@ const migrate = async () => {
     await client.query(`
       CREATE TABLE IF NOT EXISTS menu_items (
         id SERIAL PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
+        name VARCHAR(255) NOT NULL UNIQUE,
         price DECIMAL(10,2) NOT NULL,
         category VARCHAR(100) NOT NULL,
-        stock_quantity INTEGER DEFAULT 0,
+        stock_quantity INTEGER DEFAULT 0 CHECK (stock_quantity >= 0),
         is_available BOOLEAN DEFAULT true,
         image_url VARCHAR(500),
         created_at TIMESTAMP DEFAULT NOW(),
@@ -63,7 +63,8 @@ const migrate = async () => {
         joining_date DATE DEFAULT CURRENT_DATE,
         is_active BOOLEAN DEFAULT true,
         created_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW()
+        updated_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE (name, role)
       );
     `);
 
@@ -76,7 +77,8 @@ const migrate = async () => {
         check_in TIMESTAMP,
         check_out TIMESTAMP,
         status VARCHAR(20) DEFAULT 'Present' CHECK (status IN ('Present', 'Absent', 'Half-day')),
-        created_at TIMESTAMP DEFAULT NOW()
+        created_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE (worker_id, date)
       );
     `);
 
